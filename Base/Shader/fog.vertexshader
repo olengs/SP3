@@ -1,0 +1,71 @@
+#version 330 core
+
+// Input vertex data, different for all executions of this shader.
+layout(location = 0) in vec3 vertexPosition_modelspace;
+layout(location = 1) in vec3 vertexColor;
+layout(location = 2) in vec3 vertexNormal_modelspace;
+layout(location = 3) in vec2 vertexTexCoord;
+
+// Output data ; will be interpolated for each fragment.
+out vec3 vertexPosition_cameraspace;
+out vec3 fragmentColor;
+out vec3 vertexNormal_cameraspace;
+out vec2 texCoord;
+
+const float pi = 3.14159265;
+
+// Values that stay constant for the whole mesh.
+uniform mat4 MVP;
+uniform mat4 MV;
+uniform mat4 MV_inverse_transpose;
+uniform mat4 M;
+uniform mat4 VP;
+uniform bool lightEnabled;
+uniform float isMVP;
+
+uniform float ismove;
+uniform float Val;
+uniform float isWave;
+
+void main(){
+	// Output position of the vertex, in clip space : MVP * position
+	if(isMVP > 0.5f){
+		gl_Position =  MVP * vec4(vertexPosition_modelspace, 1);
+	}
+	else{
+		if(isWave > 0.5f){
+			vec4 WorldSpace = M * vec4(vertexPosition_modelspace,1);
+			//manipulate in world Space
+			//wave
+			WorldSpace.y += sin(WorldSpace.z * 20.f + Val * 10.f) * 0.4f;
+			WorldSpace.z += sin(WorldSpace.z * 20.f + Val * 10.f) * 0.4f;
+
+			//add back VP
+			gl_Position = VP * WorldSpace;
+		}
+	}
+	
+	vertexPosition_cameraspace = ( MV * vec4(vertexPosition_modelspace, 1) ).xyz;
+	if(lightEnabled == true)
+	{
+		// Vector position, in camera space
+		vertexPosition_cameraspace = ( MV * vec4(vertexPosition_modelspace, 1) ).xyz;
+		// Vertex normal, in camera space
+		// Use MV if ModelMatrix does not scale the model ! Use its inverse transpose otherwise.
+		vertexNormal_cameraspace = ( MV_inverse_transpose * vec4(vertexNormal_modelspace, 0) ).xyz;
+	}
+	// The color of each vertex will be interpolated to produce the color of each fragment
+	fragmentColor = vertexColor;
+	// A simple pass through. The texCoord of each fragment will be interpolated from texCoord of each vertex
+	texCoord = vertexTexCoord;
+
+	if(ismove > 0.5f){
+		if(isWave < 0.5f){
+			texCoord.x += Val;
+		}
+		else{
+			texCoord.y += Val;
+		}
+	}
+
+}
